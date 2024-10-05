@@ -8,8 +8,8 @@ import org.springframework.context.annotation.Import;
 @SpringBootTest
 class CloudStorageApplicationTests {
 
-	@Test
-	void contextLoads() {
-	}
+    @Test
+    void contextLoads() {
+    }
 
 }

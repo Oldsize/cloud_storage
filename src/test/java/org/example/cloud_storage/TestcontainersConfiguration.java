@@ -9,10 +9,10 @@ import org.testcontainers.utility.DockerImageName;
 @TestConfiguration(proxyBeanMethods = false)
 class TestcontainersConfiguration {
 
-	@Bean
-	@ServiceConnection
-	MariaDBContainer<?> mariaDbContainer() {
-		return new MariaDBContainer<>(DockerImageName.parse("mariadb:latest"));
-	}
+    @Bean
+    @ServiceConnection
+    MariaDBContainer<?> mariaDbContainer() {
+        return new MariaDBContainer<>(DockerImageName.parse("mariadb:latest"));
+    }
 
 }
