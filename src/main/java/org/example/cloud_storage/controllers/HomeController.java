@@ -26,7 +26,7 @@ public class HomeController {
         this.minioService = minioService;
     }
 
-    @GetMapping("home/*")
+    @GetMapping("/home")
     public String home(Principal principal, Model model,
                        @RequestParam(required = false) String path) {
         Long userid;
