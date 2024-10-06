@@ -5,7 +5,10 @@ import io.minio.messages.Item;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class MinioService {
@@ -31,9 +34,6 @@ public class MinioService {
         );
     }
 
-    // todo метод upload надо будет доработать, как именно:
-    // todo если юзер захочет загрузить файл не имея папок, то он будет загружаться в user-{id}-files/file
-    // todo если юзер захочет загрузить файл в какую то папку или подпапку, аналогично, user-{id}-files/directory/subdirectory/file
 
     public InputStream download(String bucketName, String objectName) throws Exception {
         return minioClient.getObject(
@@ -104,5 +104,29 @@ public class MinioService {
             String fileName = item.objectName().replace("user-" + userid + "-files/" + folderName + "/", "");
             remove(bucketName, fileName, userid, folderName);
         }
+    }
+
+    public Iterable<Result<Item>> searchFilesByName(String bucketName, String folderName, Long userid, String fileName) throws FileNotFoundException {
+        String folder = "user-" + userid + "-files/" + folderName;
+        Iterable<Result<Item>> files = minioClient.listObjects(
+                ListObjectsArgs
+                        .builder()
+                        .bucket(bucketName)
+                        .prefix(folder)
+                        .build()
+        );
+
+        List<Result<Item>> matchingFiles = new ArrayList<>();
+        for (Result<Item> result : files) {
+            try {
+                Item item = result.get();
+                if (item.objectName().endsWith(fileName)) {
+                    matchingFiles.add(result);
+                }
+            } catch (Exception e) {
+                throw new FileNotFoundException();
+            }
+        }
+        return matchingFiles;
     }
 }
