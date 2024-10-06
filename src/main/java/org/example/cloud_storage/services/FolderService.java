@@ -21,7 +21,7 @@ public class FolderService {
         this.userRepository = userRepository;
     }
 
-    public void addFolderOrSubFolder(String folderName, Long userid) {
+    public void add(String folderName, Long userid) {
         User user = userRepository.findById(userid).orElse(null);
         folderRepository.save(new Folder(folderName, user));
     }
@@ -32,7 +32,7 @@ public class FolderService {
     }
 
 
-    public void removeFolder(String folderName, Long userid) {
+    public void remove(String folderName, Long userid) {
         User user = userRepository.findById(userid).orElse(null);
         folderRepository.delete(folderRepository.findByFolderNameAndUser(folderName, user));
     }
