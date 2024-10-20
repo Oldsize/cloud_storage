@@ -12,11 +12,14 @@ import java.util.List;
 
 @Service
 public class MinioService {
+
     private final MinioClient minioClient;
+    private final FolderService folderService;
 
     @Autowired
-    public MinioService(MinioClient minioClient) {
+    public MinioService(MinioClient minioClient, FolderService folderService) {
         this.minioClient = minioClient;
+        this.folderService = folderService;
     }
 
     public void upload(String bucketName, String objectName,
@@ -34,7 +37,6 @@ public class MinioService {
         );
     }
 
-
     public InputStream download(String bucketName, String objectName) throws Exception {
         return minioClient.getObject(
                 GetObjectArgs
@@ -45,8 +47,8 @@ public class MinioService {
         );
     }
 
-    public void remove(String bucketName, String objectName,
-                       Long userid, String folder) throws Exception {
+    public void removeFile(String bucketName, String objectName,
+                           Long userid, String folder) throws Exception {
         objectName = "user-" + userid + "-files/" + folder + "/" + objectName;
         minioClient.removeObject(
                 RemoveObjectArgs
@@ -57,76 +59,92 @@ public class MinioService {
         );
     }
 
-
-    public void rename(String bucketName, String objectName,
-                           Long userid, String folder,
-                           String finalName) throws Exception {
-        String afterRemovedName;
-        afterRemovedName = "user-" + userid + "-files/" + folder + "/" + finalName;
-        objectName = "user-" + userid + "-files/" + folder + "/" + objectName;
-
+    public void renameFile(String bucketName, String objectName,
+                           Long userid, String finalName) throws Exception {
+        String cleanObjectName = objectName.replaceFirst("user-" + userid + "-files/", "");
+        String fileName = cleanObjectName.substring(cleanObjectName.lastIndexOf("/") + 1);
+        String folder = cleanObjectName.contains("/") ? cleanObjectName.substring(0, cleanObjectName.lastIndexOf("/")) : "";
         StatObjectResponse stat = minioClient.statObject(
                 StatObjectArgs.builder()
                         .bucket(bucketName)
                         .object(objectName)
                         .build()
         );
-
         long size = stat.size();
         String contentType = stat.contentType();
-
         InputStream file = download(bucketName, objectName);
-
-        remove(bucketName, objectName, userid, folder);
-
-
-        upload(bucketName, afterRemovedName, file, size, contentType, userid, folder);
-
+        removeFile(bucketName, fileName, userid, folder);
+        upload(bucketName, finalName, file, size, contentType, userid, folder);
     }
 
-    public Iterable<Result<Item>> getAllNamesInFolder(String bucketName, String fold,
-                                                      Long userid) {
-        String folder;
-        folder = "user-" + userid + "-files/" + fold;
-        return minioClient.listObjects(
+    public List<String> getAllNamesInFolder(String bucketName, String folderName, Long userid) throws Exception {
+        String folder = "user-" + userid + "-files/" + folderName;
+        List<String> fileNames = new ArrayList<>();
+        Iterable<Result<Item>> results = minioClient.listObjects(
                 ListObjectsArgs
                         .builder()
                         .bucket(bucketName)
-                        .prefix(folder)
+                        .prefix(folder + "/")
                         .build()
         );
+
+        for (Result<Item> result : results) {
+            Item item = result.get();
+            fileNames.add(item.objectName());
+        }
+        return fileNames;
     }
 
     public void removeAllByFolder(String bucketName, String folderName, Long userid) throws Exception {
-        Iterable<Result<Item>> files = getAllNamesInFolder(bucketName, folderName, userid);
-        for (Result<Item> result : files) {
-            Item item = result.get();
-            String fileName = item.objectName().replace("user-" + userid + "-files/" + folderName + "/", "");
-            remove(bucketName, fileName, userid, folderName);
+        List<String> fileNames = getAllNamesInFolder(bucketName, folderName, userid);
+        for (String fileName : fileNames) {
+            String cleanFileName = fileName.replace("user-" + userid + "-files/" + folderName + "/", "");
+            removeFile(bucketName, cleanFileName, userid, folderName);
         }
     }
 
-    public Iterable<Result<Item>> searchFilesByName(String bucketName, String folderName, Long userid, String fileName) throws FileNotFoundException {
-        String folder = "user-" + userid + "-files/" + folderName;
+    public List<String> searchFilesByName(String bucketName, Long userId, String fileName) throws FileNotFoundException {
+        String userFolderPrefix = "user-" + userId + "-files/";
         Iterable<Result<Item>> files = minioClient.listObjects(
                 ListObjectsArgs
                         .builder()
                         .bucket(bucketName)
-                        .prefix(folder)
+                        .prefix(userFolderPrefix)
+                        .recursive(true)
                         .build()
         );
 
-        List<Result<Item>> matchingFiles = new ArrayList<>();
+        List<String> matchingFiles = new ArrayList<>();
         for (Result<Item> result : files) {
             try {
                 Item item = result.get();
                 if (item.objectName().endsWith(fileName)) {
-                    matchingFiles.add(result);
+                    matchingFiles.add(item.objectName());
                 }
             } catch (Exception e) {
-                throw new FileNotFoundException();
+                throw new FileNotFoundException("Ошибка при поиске файлов: " + e.getMessage());
             }
         }
         return matchingFiles;
+    }
+
+    public void renameFolder(String bucketName, String oldName, Long userid, String newName) throws Exception {
+        folderService.rename(userid, newName, oldName);
+        List<String> fileNames = getAllNamesInFolder(bucketName, oldName, userid);
+        if (fileNames != null && !fileNames.isEmpty()) {
+            for (String oldFileName : fileNames) {
+                String cleanFileName = oldFileName.replace("user-" + userid + "-files/" + oldName + "/", "");
+                InputStream inputStream = download(bucketName, oldFileName);
+                StatObjectResponse stat = minioClient.statObject(
+                        StatObjectArgs.builder()
+                                .bucket(bucketName)
+                                .object(oldFileName)
+                                .build()
+                );
+                upload(bucketName, cleanFileName, inputStream, stat.size(), stat.contentType(), userid, newName);
+                removeFile(bucketName, cleanFileName, userid, oldName);
+            }
+            removeAllByFolder(bucketName, oldName, userid);
+        }
     }
 }
