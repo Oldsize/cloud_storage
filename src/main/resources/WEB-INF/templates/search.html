@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Поиск файлов</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400&display=swap">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: url('/images/nature.jpg');
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            font-size: 36px;
+            color: #333;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            width: 80%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 10px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .button:hover {
+            background-color: #45a049;
+        }
+
+        .file-list {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+
+        .file-list li {
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #eee;
+            border-radius: 6px;
+        }
+
+        .no-files {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Поиск файлов</h1>
+
+<div class="container">
+    <form action="/search" method="get">
+        <input type="text" name="fileName" placeholder="Введите имя файла" required>
+        <button type="submit" class="button">Поиск</button>
+    </form>
+
+    <ul class="file-list">
+        <th:block th:if="${not #lists.isEmpty(finded)}">
+            <li th:each="file : ${finded}" th:text="${file}"></li>
+        </th:block>
+
+        <th:block th:if="${#lists.isEmpty(finded)}">
+            <li class="no-files">Файлы не найдены.</li>
+        </th:block>
+    </ul>
+</div>
+
+</body>
+</html>
