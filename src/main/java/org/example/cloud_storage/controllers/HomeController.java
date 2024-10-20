@@ -1,24 +1,23 @@
 package org.example.cloud_storage.controllers;
 
-import io.minio.Result;
-import io.minio.messages.Item;
 import org.example.cloud_storage.models.Folder;
 import org.example.cloud_storage.security.CustomUserDetails;
 import org.example.cloud_storage.services.FolderService;
 import org.example.cloud_storage.services.MinioService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.security.Principal;
 import java.util.List;
 
 @Controller
 public class HomeController {
-    FolderService folderService;
-    MinioService minioService;
+
+    private final FolderService folderService;
+    private final MinioService minioService;
 
     @Autowired
     public HomeController(FolderService folderService, MinioService minioService) {
@@ -27,29 +26,25 @@ public class HomeController {
     }
 
     @GetMapping("/home")
-    public String home(Principal principal, Model model,
-                       @RequestParam(required = false) String path) {
+    public String home(Model model,
+                       @RequestParam(required = false) String path) throws Exception {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Long userid;
         if (principal instanceof CustomUserDetails) {
             userid = ((CustomUserDetails) principal).getId();
             if (path == null) {
                 List<Folder> folders = folderService.getAll(userid);
-                if (folders != null) {
-                    model.addAttribute("folders", folders);
-                    // todo esli null to pokazivaem chto nichego netu
-                }
-                // todo если path == null мы показываем папки,
-                // todo если path != null мы ищем по path папку и показываем ее
+                model.addAttribute("folders", folders);
                 return "foldersHome";
             } else {
-                try {
-                    Iterable<Result<Item>> allFiles =
+                if (folderService.isExist(path, userid)) {
+                    List<String> allFiles =
                             minioService.getAllNamesInFolder("user-files", path, userid);
                     model.addAttribute("files", allFiles);
-                    // todo можно сделать две страницы, одна под файлы, другая под папки.
+                    model.addAttribute("path", path);
                     return "filesHome";
-                } catch (Exception e) {
-                    // todo redirect на страницу с ошибкой
+                } else {
+                    return "redirect:home";
                 }
             }
         }
