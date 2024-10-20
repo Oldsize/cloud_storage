@@ -12,8 +12,9 @@ import java.util.List;
 
 @Service
 public class FolderService {
-    FolderRepository folderRepository;
-    UserRepository userRepository;
+
+    private final FolderRepository folderRepository;
+    private final UserRepository userRepository;
 
     @Autowired
     public FolderService(FolderRepository folderRepository, UserRepository userRepository) {
@@ -31,9 +32,18 @@ public class FolderService {
         return folderRepository.findAllByUser(user).orElse(Collections.emptyList());
     }
 
-
     public void remove(String folderName, Long userid) {
         User user = userRepository.findById(userid).orElse(null);
         folderRepository.delete(folderRepository.findByFolderNameAndUser(folderName, user));
+    }
+
+    public void rename(Long userid, String newName, String oldName) {
+        folderRepository.rename(userid, oldName, newName);
+    }
+
+    public boolean isExist(String folderName, Long userid) {
+        User user = userRepository.findById(userid).orElse(null);
+        Folder folder = folderRepository.findByFolderNameAndUser(folderName, user);
+        return folder != null;
     }
 }
