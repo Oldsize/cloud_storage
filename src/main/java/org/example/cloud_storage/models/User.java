@@ -2,11 +2,17 @@ package org.example.cloud_storage.models;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.proxy.HibernateProxy;
+
+import java.util.Objects;
 
 
 @Entity
 @Cacheable
-@Data
+@Getter
+@Setter
+@ToString
+@RequiredArgsConstructor
 @Table(schema = "public", name = "users")
 public class User {
     @Id
@@ -17,7 +23,7 @@ public class User {
     @Column(name = "username", unique = true, nullable = false, updatable = false)
     private String username;
 
-    @Column(name = "password", unique = true, nullable = false, updatable = false)
+    @Column(name = "password", nullable = false, updatable = false)
     private String password;
 
     public User(String username, String password) {
@@ -25,6 +31,21 @@ public class User {
         this.password = password;
     }
 
-    public User() {
+
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy proxy ? proxy.getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy proxy ? proxy.getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        User user = (User) o;
+        return getId() != null && Objects.equals(getId(), user.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return this instanceof HibernateProxy proxy ? proxy.getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
     }
 }
