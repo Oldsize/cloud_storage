@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Поиск файлов</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: url('/images/nature.jpg');
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      font-size: 36px;
+      color: #333;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .container {
+      background-color: #fff;
+      padding: 20px;
+      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+      width: 80%;
+      max-width: 600px;
+      text-align: center;
+    }
+
+    .button {
+      display: inline-block;
+      padding: 10px 20px;
+      margin: 10px;
+      background-color: #4CAF50;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .button:hover {
+      background-color: #45a049;
+    }
+
+    .file-list {
+      list-style: none;
+      padding: 0;
+      margin: 20px 0;
+    }
+
+    .file-list li {
+      padding: 10px;
+      margin: 10px 0;
+      background-color: #eee;
+      border-radius: 6px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .no-files {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #777;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Поиск файлов</h1>
+
+<div class="container">
+  <form id="searchForm" onsubmit="searchFiles(event)">
+    <input type="text" name="fileName" placeholder="Введите имя файла" required>
+    <button type="submit" class="button">Поиск</button>
+  </form>
+
+  <ul class="file-list" id="fileList">
+  </ul>
+
+  <p id="noFilesMessage" class="no-files" style="display: none;">Файлы не найдены.</p>
+</div>
+
+<script>
+  function searchFiles(event) {
+    event.preventDefault();
+    const fileName = document.querySelector('input[name="fileName"]').value;
+
+    fetch(`/search?fileName=${encodeURIComponent(fileName)}`)
+            .then(response => {
+              if (!response.ok) {
+                throw new Error('Ошибка сети');
+              }
+              return response.text();
+            })
+            .then(responseText => {
+              const fileList = document.getElementById('fileList');
+              const noFilesMessage = document.getElementById('noFilesMessage');
+
+              fileList.innerHTML = '';
+              noFilesMessage.style.display = 'none';
+
+              if (responseText.trim()) {
+                const files = responseText.split('\n');
+                files.forEach(file => {
+                  const li = document.createElement('li');
+                  li.textContent = file;
+                  fileList.appendChild(li);
+                });
+              } else {
+                noFilesMessage.style.display = 'block';
+              }
+            })
+            .catch(error => {
+              console.error('Ошибка при выполнении запроса:', error);
+            });
+  }
+</script>
+
+</body>
+</html>
