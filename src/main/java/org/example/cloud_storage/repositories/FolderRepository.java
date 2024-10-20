@@ -4,6 +4,8 @@ import jakarta.transaction.Transactional;
 import org.example.cloud_storage.models.Folder;
 import org.example.cloud_storage.models.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
@@ -11,11 +13,8 @@ import java.util.Optional;
 public interface FolderRepository extends JpaRepository<Folder, Long> {
     Optional<List<Folder>> findAllByUser(User user);
     Folder findByFolderNameAndUser(String folder, User user);
+    @Modifying
     @Transactional
-    default void renameFolder(Long folderId, String newFolderName) {
-        Folder folder = findById(folderId)
-                .orElseThrow(() -> new IllegalArgumentException("Folder not found: " + folderId));
-        folder.setFolderName(newFolderName);
-        save(folder);
-    }
+    @Query("UPDATE Folder f SET f.folderName = :newFolderName WHERE f.folderName = :oldFolderName AND f.user.id = :userId")
+    void rename(Long userId, String oldFolderName, String newFolderName);
 }
