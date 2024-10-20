@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/5.3.0/css/bootstrap.min.css">
+    <title>Cloud File Storage</title>
+    <style>
+        body {
+            background: url('/images/forest4.jpg') no-repeat center center fixed;
+            background-size: cover;
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            color: #fff;
+        }
+
+        .container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card {
+            opacity: 0.9;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            width: 80%;
+            max-width: 600px;
+        }
+
+        .card-title {
+            font-size: 3rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            color: black;
+            text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.7);
+            margin-top: -10%;
+        }
+
+        .btn {
+            background-color: rgba(0, 123, 255, 0.7);
+            border: none;
+            border-radius: 10px;
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+            text-decoration: none;
+            color: white; /
+        }
+
+        .btn:hover {
+            background-color: rgba(0, 123, 255, 1);
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <h1 class="card-title">Cloud File Storage</h1>
+        <div class="button-group">
+            <div>
+                <a href="/home" class="btn">Главная</a>
+                <a href="/search" class="btn">Поиск</a>
+            </div>
+            <div>
+                <a href="/login" class="btn">Авторизация</a>
+                <a href="/register" class="btn">Регистрация</a>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
