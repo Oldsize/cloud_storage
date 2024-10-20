@@ -3,17 +3,18 @@ package org.example.cloud_storage.controllers;
 import org.example.cloud_storage.security.CustomUserDetails;
 import org.example.cloud_storage.services.MinioService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.io.FileNotFoundException;
-import java.security.Principal;
 
 @Controller
 public class SearchController {
 
-    MinioService minioService;
+    private final MinioService minioService;
 
     @Autowired
     public SearchController(MinioService minioService) {
@@ -21,14 +22,15 @@ public class SearchController {
     }
 
     @GetMapping("/search")
-    public String search(String folderName, String fileName,
-                         Model model, Principal principal) {
+    public String search(@RequestParam(required = false) String fileName,
+                         Model model) throws FileNotFoundException {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        System.out.println("Ручка дёрнута, инициализируем принципал.");
         if (principal instanceof CustomUserDetails) {
+            System.out.println("Инициализировали principal");
             Long userid = ((CustomUserDetails) principal).getId();
-            try {
-                model.addAttribute("finded", minioService.searchFilesByName("user-files", folderName, userid, fileName));
-            } catch (FileNotFoundException e) {
-                // todo redirect на страницу с ошибкой
+            if (fileName != null) {
+                model.addAttribute("finded", minioService.searchFilesByName("user-files", userid, fileName));
             }
         }
         return "search";
