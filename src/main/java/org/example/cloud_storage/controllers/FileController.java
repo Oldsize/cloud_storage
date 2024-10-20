@@ -1,81 +1,83 @@
 package org.example.cloud_storage.controllers;
 
+import com.google.common.net.HttpHeaders;
 import org.example.cloud_storage.security.CustomUserDetails;
 import org.example.cloud_storage.services.MinioService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.security.Principal;
+import java.io.InputStream;
 
-@RestController
+@Controller
 @RequestMapping("/api/file")
 public class FileController {
-    MinioService minioService;
+
+    private final MinioService minioService;
 
     @Autowired
     public FileController(MinioService minioService) {
         this.minioService = minioService;
     }
 
-    // todo сюда будет перенаправлять при загрузке файлов или при запросе на загрузку файла
-
     @PostMapping("/upload")
     public String upload(@RequestParam MultipartFile file,
-                         @RequestParam String folderName,
-                         Principal principal) {
-        try {
-            String bucketName = "user-files";
-            String fileName = file.getOriginalFilename();
-            if (principal instanceof CustomUserDetails) {
-                Long userId = ((CustomUserDetails) principal).getId();
-                minioService.upload(bucketName, fileName,
-                        file.getInputStream(), file.getSize(),
-                        file.getContentType(), userId, folderName);
-            }
-        } catch (Exception e) {
-            // todo forward на страницу с ошибкой
+                         @RequestParam String folderName) throws Exception {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String bucketName = "user-files";
+        String fileName = file.getOriginalFilename();
+        if (principal instanceof CustomUserDetails) {
+            Long userId = ((CustomUserDetails) principal).getId();
+            minioService.upload(bucketName, fileName,
+                    file.getInputStream(), file.getSize(),
+                    file.getContentType(), userId, folderName);
         }
-        return "index";
-        // todo редирект на страницу с загруженным файлом в папку
+        return "redirect:home/?path=" + folderName;
     }
 
     @PostMapping("/rename")
     public String rename(@RequestParam String oldName,
-                         @RequestParam String newName,
-                         @RequestParam String path,
-                         Principal principal) {
+                         @RequestParam String newName) throws Exception {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         if (principal instanceof CustomUserDetails) {
             Long userid = ((CustomUserDetails) principal).getId();
-            try {
-                minioService.rename("user-files", oldName,
-                        userid, path, newName);
-            } catch (Exception e) {
-                // todo redirect на страницу с ошибкой
-            }
+            minioService.renameFile("user-files", oldName,
+                    userid, newName);
         }
-        return "redirect:home?path=" + path;
+        return "redirect:home";
     }
 
     @PostMapping("/remove")
+    @ResponseBody
     public String remove(@RequestParam String file,
-                         @RequestParam String path,
-                         Principal principal) {
+                         @RequestParam String path) throws Exception {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         if (principal instanceof CustomUserDetails) {
             Long userid = ((CustomUserDetails) principal).getId();
-            try {
-                minioService.remove("user-files",
-                        file, userid, path);
-            } catch (Exception e) {
-                // todo redirect на страницу с ошибкой
-            }
+            String cleanObjectName = file.replaceFirst("user-" + userid + "-files/", "");
+            String fileName = cleanObjectName.substring(cleanObjectName.lastIndexOf("/") + 1);
+            minioService.removeFile("user-files",
+                    fileName, userid, path);
         }
-        return "redirect:home?path=" + path;
+        return "redirect:home/?path=" + path;
     }
 
-    // todo метод @PostMapping("download")
-    // todo       public String download() {}
+    @GetMapping("/download")
+    public ResponseEntity<InputStreamResource> download(@RequestParam String filename) {
+        try {
+            InputStream fileStream = minioService.download("user-files", filename);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(new InputStreamResource(fileStream));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }
