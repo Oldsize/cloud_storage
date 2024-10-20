@@ -58,7 +58,7 @@
         <dependency>
             <groupId>org.springframework.session</groupId>
             <artifactId>spring-session-data-redis</artifactId>
-            <version>3.1.0</version> <!-- Убедитесь, что версия актуальна -->
+            <version>3.3.2</version>
         </dependency>
 
         <!-- thymeleaf spring security -->
@@ -125,8 +125,16 @@
         <dependency>
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>
-            <version>4.3.1</version> <!-- или последняя версия -->
+            <version>4.3.1</version>
         </dependency>
+
+        <!-- bootstrap -->
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>bootstrap</artifactId>
+            <version>5.3.3</version>
+        </dependency>
+
     </dependencies>
 
     <build>
