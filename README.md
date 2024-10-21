@@ -37,7 +37,7 @@ Frontend:
 Thymeleaf
 
 How to Run
-1. Clone the repository: ```bash git clone https://github.com/Oldsize/cloud_storage.git ```
+1. Clone the repository: ```git clone https://github.com/Oldsize/cloud_storage.git ```
 2. Setup Docker, PostgreSQL and Minio,
 3. configure "application.properties"
 4. Run Spring Boot application.
