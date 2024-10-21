@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Поиск файлов</title>
+  <title>Ваши файлы</title>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -61,67 +61,160 @@
       background-color: #eee;
       border-radius: 6px;
       display: flex;
-      justify-content: center;
+      justify-content: space-between;
+      align-items: center;
     }
 
-    .no-files {
-      margin-top: 20px;
+    .file-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .file-actions button {
+      padding: 5px 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .delete-btn {
+      background-color: #f44336;
+      color: white;
+    }
+
+    .rename-btn {
+      background-color: #ffa500;
+      color: white;
+    }
+
+    .download-btn {
+      background-color: #007bff;
+      color: white;
+    }
+
+    .current-folder {
+      margin-bottom: 20px;
       font-size: 18px;
       color: #777;
     }
   </style>
 </head>
 <body>
-
-<h1>Поиск файлов</h1>
+<h1>Ваши файлы</h1>
 
 <div class="container">
-  <form id="searchForm" onsubmit="searchFiles(event)">
-    <input type="text" name="fileName" placeholder="Введите имя файла" required>
-    <button type="submit" class="button">Поиск</button>
-  </form>
+  <p class="current-folder" th:text="'Текущая папка: ' + ${path}"></p>
 
-  <ul class="file-list" id="fileList">
+  <ul class="file-list">
+    <li th:each="file : ${files}">
+      <span th:text="${file}">Название файла</span>
+      <div class="file-actions">
+        <button class="download-btn" th:text="'Скачать'" th:data-file="${file}" th:data-path="${path}">Скачать</button>
+        <button class="rename-btn" th:text="'Переименовать'" th:data-file="${file}" th:data-path="${path}">Переименовать</button>
+        <button class="delete-btn" th:text="'Удалить'" th:data-file="${file}" th:data-path="${path}">Удалить</button>
+      </div>
+    </li>
   </ul>
 
-  <p id="noFilesMessage" class="no-files" style="display: none;">Файлы не найдены.</p>
+  <p th:if="${#lists.isEmpty(files)}" class="no-files">В этой папке нет файлов</p>
+
+  <form id="uploadForm" action="/api/file/upload" method="post" enctype="multipart/form-data">
+    <input type="file" name="file" required>
+    <input type="hidden" name="folderName" th:value="${path}">
+    <button type="submit" class="button">Загрузить файл</button>
+  </form>
 </div>
 
 <script>
-  function searchFiles(event) {
-    event.preventDefault();
-    const fileName = document.querySelector('input[name="fileName"]').value;
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.download-btn').forEach(button => {
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        const file = button.getAttribute('data-file');
+        downloadFile(file);
+      });
+    });
 
-    fetch(`/search?fileName=${encodeURIComponent(fileName)}`)
-            .then(response => {
-              if (!response.ok) {
-                throw new Error('Ошибка сети');
-              }
-              return response.text();
-            })
-            .then(responseText => {
-              const fileList = document.getElementById('fileList');
-              const noFilesMessage = document.getElementById('noFilesMessage');
+    document.querySelectorAll('.rename-btn').forEach(button => {
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        const file = button.getAttribute('data-file');
+        const path = button.getAttribute('data-path');
+        renameFile(file, path);
+      });
+    });
 
-              fileList.innerHTML = '';
-              noFilesMessage.style.display = 'none';
+    document.querySelectorAll('.delete-btn').forEach(button => {
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        const file = button.getAttribute('data-file');
+        const path = button.getAttribute('data-path');
+        deleteFile(file, path);
+      });
+    });
 
-              if (responseText.trim()) {
-                const files = responseText.split('\n');
-                files.forEach(file => {
-                  const li = document.createElement('li');
-                  li.textContent = file;
-                  fileList.appendChild(li);
+    function downloadFile(fileName) {
+      const form = document.createElement('form');
+      form.method = 'GET';
+      form.action = '/api/file/download';
+
+      const inputFileName = document.createElement('input');
+      inputFileName.type = 'hidden';
+      inputFileName.name = 'filename';
+      inputFileName.value = fileName;
+
+      form.appendChild(inputFileName);
+      document.body.appendChild(form);
+      form.submit();
+    }
+
+    function renameFile(oldName) {
+      const newName = prompt("Введите новое имя для файла:");
+      if (newName) {
+        const formData = new URLSearchParams();
+        formData.append('oldName', oldName);
+        formData.append('newName', newName);
+
+        fetch('/api/file/rename', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: formData.toString()
+        })
+                .then(response => {
+                  if (response.ok) {
+                    window.location.reload();
+                  } else {
+                    alert('Ошибка при переименовании файла');
+                  }
                 });
-              } else {
-                noFilesMessage.style.display = 'block';
-              }
-            })
-            .catch(error => {
-              console.error('Ошибка при выполнении запроса:', error);
-            });
-  }
-</script>
+      }
+    }
 
+    function deleteFile(fileName, folderName) {
+      if (confirm("Вы уверены, что хотите удалить файл?")) {
+        const formData = new URLSearchParams();
+        formData.append('file', fileName);
+        formData.append('path', folderName);
+
+        fetch('/api/file/remove', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: formData.toString()
+        })
+                .then(response => {
+                  if (response.ok) {
+                    window.location.reload();
+                  } else {
+                    alert('Ошибка при удалении файла');
+                  }
+                });
+      }
+    }
+  });
+</script>
 </body>
 </html>
