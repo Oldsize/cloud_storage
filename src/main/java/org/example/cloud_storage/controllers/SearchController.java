@@ -25,9 +25,7 @@ public class SearchController {
     public String search(@RequestParam(required = false) String fileName,
                          Model model) throws FileNotFoundException {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        System.out.println("Ручка дёрнута, инициализируем принципал.");
         if (principal instanceof CustomUserDetails) {
-            System.out.println("Инициализировали principal");
             Long userid = ((CustomUserDetails) principal).getId();
             if (fileName != null) {
                 model.addAttribute("finded", minioService.searchFilesByName("user-files", userid, fileName));
