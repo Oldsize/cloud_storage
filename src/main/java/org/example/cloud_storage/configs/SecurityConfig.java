@@ -30,7 +30,7 @@ import org.springframework.session.security.SpringSessionBackedSessionRegistry;
 public class SecurityConfig {
 
     private final UserRepository userRepository;
-    RedisIndexedSessionRepository redisIndexedSessionRepository;
+    private final RedisIndexedSessionRepository redisIndexedSessionRepository;
 
     @Autowired
     public SecurityConfig(UserRepository userRepository, RedisIndexedSessionRepository redisIndexedSessionRepository) {
