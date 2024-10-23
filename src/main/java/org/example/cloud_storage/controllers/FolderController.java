@@ -31,8 +31,8 @@ public class FolderController {
     @PostMapping("/create")
     public String create(@RequestParam String name) {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof CustomUserDetails) {
-            Long userid = ((CustomUserDetails) principal).getId();
+        if (principal instanceof CustomUserDetails customUserDetails) {
+            Long userid = customUserDetails.getId();
             folderService.add(name, userid);
         }
         return "redirect:home";
@@ -41,9 +41,9 @@ public class FolderController {
     @PostMapping("/remove")
     public String remove(@RequestParam String name) throws Exception {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof CustomUserDetails) {
-            Long userid = ((CustomUserDetails) principal).getId();
-            minioService.removeAllByFolder("user-files", name, userid);
+        if (principal instanceof CustomUserDetails customUserDetails) {
+            Long userid = customUserDetails.getId();
+            minioService.removeAllByFolder(name, userid);
             folderService.remove(name, userid);
         }
         return "redirect:home";
@@ -54,9 +54,9 @@ public class FolderController {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String oldName = request.getOldName();
         String newName = request.getNewName();
-        if (principal instanceof CustomUserDetails) {
-            Long userid = ((CustomUserDetails) principal).getId();
-            minioService.renameFolder("user-files", oldName, userid, newName);
+        if (principal instanceof CustomUserDetails customUserDetails) {
+            Long userid = customUserDetails.getId();
+            minioService.renameFolder(oldName, userid, newName);
             return ResponseEntity.ok("Папка успешно переименована");
         }
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Пользователь не авторизован");
