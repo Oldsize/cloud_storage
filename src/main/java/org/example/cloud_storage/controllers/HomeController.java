@@ -29,24 +29,23 @@ public class HomeController {
     public String home(Model model,
                        @RequestParam(required = false) String path) throws Exception {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        Long userid;
-        if (principal instanceof CustomUserDetails) {
-            userid = ((CustomUserDetails) principal).getId();
+        if (principal instanceof CustomUserDetails customUserDetails) {
+            Long userid = customUserDetails.getId();
             if (path == null) {
                 List<Folder> folders = folderService.getAll(userid);
                 model.addAttribute("folders", folders);
                 return "foldersHome";
-            } else {
-                if (folderService.isExist(path, userid)) {
-                    List<String> allFiles =
-                            minioService.getAllNamesInFolder("user-files", path, userid);
-                    model.addAttribute("files", allFiles);
-                    model.addAttribute("path", path);
-                    return "filesHome";
-                } else {
-                    return "redirect:home";
-                }
             }
+            if (folderService.isExist(path, userid)) {
+                List<String> allFiles =
+                        minioService.getAllNamesInFolder(path, userid);
+                model.addAttribute("files", allFiles);
+                model.addAttribute("path", path);
+                return "filesHome";
+            } else {
+                return "redirect:home";
+            }
+
         }
         return "foldersHome";
     }
