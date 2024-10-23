@@ -30,13 +30,12 @@ public class FileController {
     public String upload(@RequestParam MultipartFile file,
                          @RequestParam String folderName) throws Exception {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String bucketName = "user-files";
         String fileName = file.getOriginalFilename();
-        if (principal instanceof CustomUserDetails) {
-            Long userId = ((CustomUserDetails) principal).getId();
-            minioService.upload(bucketName, fileName,
+        if (principal instanceof CustomUserDetails customUserDetails) {
+            Long userid = customUserDetails.getId();
+            minioService.upload(fileName,
                     file.getInputStream(), file.getSize(),
-                    file.getContentType(), userId, folderName);
+                    file.getContentType(), userid, folderName);
         }
         return "redirect:home/?path=" + folderName;
     }
@@ -45,25 +44,23 @@ public class FileController {
     public String rename(@RequestParam String oldName,
                          @RequestParam String newName) throws Exception {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof CustomUserDetails) {
-            Long userid = ((CustomUserDetails) principal).getId();
-            minioService.renameFile("user-files", oldName,
+        if (principal instanceof CustomUserDetails customUserDetails) {
+            Long userid = customUserDetails.getId();
+            minioService.renameFile(oldName,
                     userid, newName);
         }
         return "redirect:home";
     }
 
     @PostMapping("/remove")
-    @ResponseBody
     public String remove(@RequestParam String file,
                          @RequestParam String path) throws Exception {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof CustomUserDetails) {
-            Long userid = ((CustomUserDetails) principal).getId();
+        if (principal instanceof CustomUserDetails customUserDetails) {
+            Long userid = customUserDetails.getId();
             String cleanObjectName = file.replaceFirst("user-" + userid + "-files/", "");
             String fileName = cleanObjectName.substring(cleanObjectName.lastIndexOf("/") + 1);
-            minioService.removeFile("user-files",
-                    fileName, userid, path);
+            minioService.removeFile(fileName, userid, path);
         }
         return "redirect:home/?path=" + path;
     }
@@ -71,7 +68,7 @@ public class FileController {
     @GetMapping("/download")
     public ResponseEntity<InputStreamResource> download(@RequestParam String filename) {
         try {
-            InputStream fileStream = minioService.download("user-files", filename);
+            InputStream fileStream = minioService.download(filename);
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
