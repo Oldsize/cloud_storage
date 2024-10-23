@@ -28,7 +28,7 @@ public class SearchController {
         if (principal instanceof CustomUserDetails) {
             Long userid = ((CustomUserDetails) principal).getId();
             if (fileName != null) {
-                model.addAttribute("finded", minioService.searchFilesByName("user-files", userid, fileName));
+                model.addAttribute("finded", minioService.searchFilesByName(userid, fileName));
             }
         }
         return "search";
